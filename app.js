@@ -182,9 +182,13 @@ function reto(n, r) {
         ${conMemoria ? `<div>${memoriaHTML(nv.estructura)}</div>` : ''}
         <div><p class="pregunta">${esc(rt.pregunta)}</p>${codigo}<div id="zona"></div></div>
       </div>
-      <div id="retro"></div>
-      <div class="fila-btn oculto" id="nav"><button class="btn grande" id="siguiente"></button></div>
-    </div>`);
+      <div class="fila-btn oculto" id="nav"><button class="btn sec" id="reabrir">${ICONO.ojo} Ver retroalimentación</button>
+        <button class="btn grande" id="siguiente2"></button></div>
+    </div>
+    <dialog id="dlg" aria-labelledby="dlg-titulo">
+      <div class="dlg-cuerpo" id="retro"></div>
+      <div class="dlg-pie"><button class="btn sec" id="cerrar">${ICONO.cerrar} Cerrar</button><button class="btn grande" id="siguiente"></button></div>
+    </dialog>`);
   $('#volver').onclick = mapa;
   ({ casilla: zonaCasilla, opcion: zonaOpciones, error: zonaError, clasifica: zonaClasifica })[rt.tipo](n, r, rt);
 }
@@ -219,9 +223,15 @@ function zonaCasilla(n, r, rt) {
   if (multi) $('#listo').onclick = () => terminar([...elegidas]);
 }
 
+function barajar(a) {
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
 function zonaOpciones(n, r, rt) {
-  $('#zona').innerHTML = `<div class="opciones">${rt.opciones.map((o, i) =>
-    `<button class="op cod" data-i="${i}">${esc(o)}</button>`).join('')}</div>`;
+  const orden = barajar(rt.opciones.map((_, i) => i));
+  $('#zona').innerHTML = `<div class="opciones">${orden.map(i =>
+    `<button class="op cod" data-i="${i}">${esc(rt.opciones[i])}</button>`).join('')}</div>`;
   document.querySelectorAll('.op').forEach(b => {
     b.onclick = () => {
       const i = +b.dataset.i, ok = i === rt.correcta;
@@ -287,16 +297,24 @@ function responder(n, r, ok, porque) {
   if (!repaso) { E.resp[clave(n, r)] = ok; guardar(); }
   const arte = ok ? gopherSvg({ ojos: 'feliz', boca: 'abierta' }) : sticker(rt.sticker ?? [3, 7][(n + r) % 2]);
   $('#retro').innerHTML = `<div class="retro ${ok ? 'ok' : 'no'}">${arte}<div>
-      <h3>${ok ? '¡Correcto!' : 'No es correcto'}</h3>
+      <h3 id="dlg-titulo">${ok ? '¡Correcto!' : 'No es correcto'}</h3>
       ${porque ? `<p><b>Por qué no:</b> ${esc(porque)}</p>` : ''}
       <p>${esc(rt.explica)}</p></div></div>${solucion(nv, rt)}`;
-  const ultimo = r === nv.retos.length - 1;
-  $('#siguiente').innerHTML = ultimo ? `Terminar la misión ${ICONO.sig}` : `Siguiente reto ${ICONO.sig}`;
-  $('#siguiente').onclick = () => (ultimo ? finNivel(n) : reto(n, r + 1));
-  $('#nav').classList.remove('oculto');
+  const dlg = $('#dlg'), ultimo = r === nv.retos.length - 1;
+  const avanzar = () => { dlg.close(); if (ultimo) finNivel(n); else reto(n, r + 1); };
+  ['#siguiente', '#siguiente2'].forEach(b => {
+    $(b).innerHTML = ultimo ? `Terminar la misión ${ICONO.sig}` : `Siguiente reto ${ICONO.sig}`;
+    $(b).onclick = avanzar;
+  });
+  $('#cerrar').onclick = () => dlg.close();
+  $('#reabrir').onclick = () => dlg.showModal();
+  // al cerrar (botón, Esc o toque fuera) queda la barra para reabrir; si ya se cambió de pantalla, no hace nada
+  dlg.onclose = () => { if (dlg.isConnected) $('#nav').classList.remove('oculto'); };
+  dlg.onclick = e => { if (e.target === dlg) dlg.close(); };
   const jug = document.querySelector('header .jugador');
   if (jug) jug.innerHTML = `<b>${esc(E.nombre)} ${esc(E.apellido)}</b><br>${aciertos()} de ${TOTAL} aciertos`;
-  $('#retro').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  dlg.showModal();
+  $('#retro').scrollTop = 0;
 }
 
 function solucion(nv, rt) {

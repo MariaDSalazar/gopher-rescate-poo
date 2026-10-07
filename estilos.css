@@ -188,6 +188,31 @@ button.linea:hover:not(:disabled) { border-color: var(--dorado); }
 .paso-a-paso { margin-top: 14px; border-top: 2px dashed #e1e7ef; padding-top: 14px; }
 .paso-a-paso .memoria { margin-top: 4px; }
 
+/* ---------- retroalimentación en ventana superpuesta (<dialog>) ---------- */
+html:has(dialog[open]) { overflow: hidden; }
+#dlg {
+  padding: 0; border: 0; border-radius: 20px; background: #fff; color: var(--texto); overflow: hidden;
+  width: min(920px, calc(100vw - 32px)); max-width: none;
+  max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
+}
+#dlg[open] { display: flex; flex-direction: column; animation: aparece .3s ease-out; }
+#dlg::backdrop { background: rgba(0, 18, 46, .72); backdrop-filter: blur(3px); }
+@keyframes aparece { from { opacity: 0; transform: translateY(28px) scale(.97); } }
+.dlg-cuerpo { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 18px 20px 8px; }
+.dlg-cuerpo .retro { margin-top: 0; }
+.dlg-cuerpo h2 { color: var(--azul); }
+.dlg-pie { flex: none; display: flex; gap: 10px; padding: 12px 20px; border-top: 1px solid #e3e8ef; background: #f7f9fc; }
+.dlg-pie .btn.grande { flex: 1; width: auto; }
+/* en celular: hoja que sube desde abajo */
+@media (max-width: 600px) {
+  #dlg { width: 100%; margin: auto 0 0; border-radius: 22px 22px 0 0; max-height: calc(100vh - 36px); max-height: calc(100dvh - 36px); }
+  #dlg[open] { animation: sube .3s ease-out; }
+  .dlg-cuerpo { padding: 16px 12px 8px; }
+  .dlg-pie { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
+  .dlg-pie .btn { padding: 13px 14px; font-size: 1rem; }
+}
+@keyframes sube { from { transform: translateY(100%); } }
+
 /* ---------- fin de misión y certificado ---------- */
 .fin { text-align: center; }
 .fin .gopher { width: 140px; }
@@ -204,6 +229,9 @@ button.linea:hover:not(:disabled) { border-color: var(--dorado); }
 }
 /* código sin ligaduras: que >= y != se vean como se escriben (el atajo font: las reactivaría) */
 * { font-variant-ligatures: none !important; font-feature-settings: "liga" 0, "calt" 0 !important; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after, #dlg[open] { animation: none !important; transition: none !important; }
+}
 @media (max-width: 480px) {
   main { padding: 12px; }
   .card { padding: 14px; }
